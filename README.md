@@ -7,11 +7,9 @@ Multiplayer AI Quiz game — up to 10 players!
 ### 1. Add your Firebase Database URL
 Open `index.html` and find this line:
 ```
-databaseURL: "REPLACE_WITH_YOUR_DATABASE_URL",
-```
 Replace with your actual URL like:
 ```
-databaseURL: "https://quiz-khush-default-rtdb.firebaseio.com",
+databaseURL: "https//:Quiz-Khush.web.apo",
 ```
 
 ### 2. Firebase Realtime Database Rules
