@@ -1497,8 +1497,14 @@ Make questions fun, medium difficulty, and diverse within the topic.`
       })
     });
     const data = await resp.json();
-    const text = data.content[0].text.trim().replace(/```json|```/g,'').trim();
-    return JSON.parse(text);
+    if (!data.content || !data.content[0]) {
+      throw new Error('API Error: ' + JSON.stringify(data));
+    }
+    let text = data.content[0].text.trim();
+    text = text.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+    const match = text.match(/\[[\s\S]*\]/);
+    if (!match) throw new Error('No JSON found: ' + text.substring(0,100));
+    return JSON.parse(match[0]);
   }
 
   // ─── QUIZ UI ───
