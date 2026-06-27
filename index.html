@@ -1033,6 +1033,29 @@
         <button class="topic-btn" onclick="selectTopic(this,'Gaming')">🎮 Gaming</button>
         <button class="topic-btn" onclick="selectTopic(this,'Sports')">⚽ Sports</button>
         <button class="topic-btn" onclick="selectTopic(this,'History')">📜 History</button>
+        <button class="topic-btn" onclick="selectTopic(this,'Random')">🎲 Random</button>
+        <button class="topic-btn" onclick="selectCustomTopic(this)">✏️ Custom</button>
+      </div>
+      <div id="customTopicRow" style="display:none;margin-top:10px;">
+        <div class="add-friend-row">
+          <input type="text" id="customTopicInput" placeholder="Enter your topic..." style="font-size:0.9rem;" />
+          <button class="btn-small" onclick="applyCustomTopic()">Set</button>
+        </div>
+      </div>
+
+      <div style="font-size:0.85rem;color:var(--muted);margin:14px 0 10px;font-weight:700;">NUMBER OF QUESTIONS</div>
+      <div class="topic-grid" id="countGrid">
+        <button class="topic-btn" onclick="selectCount(this,5)">5️⃣ 5</button>
+        <button class="topic-btn selected" onclick="selectCount(this,10)">🔟 10</button>
+        <button class="topic-btn" onclick="selectCount(this,15)">📋 15</button>
+        <button class="topic-btn" onclick="selectCount(this,20)">🔥 20</button>
+        <button class="topic-btn" onclick="selectCustomCount(this)">✏️ Custom</button>
+      </div>
+      <div id="customCountRow" style="display:none;margin-top:10px;">
+        <div class="add-friend-row">
+          <input type="number" id="customCountInput" placeholder="Number (1-50)" min="1" max="50" style="font-size:0.9rem;" />
+          <button class="btn-small" onclick="applyCustomCount()">Set</button>
+        </div>
       </div>
     </div>
 
@@ -1098,7 +1121,8 @@
     appId: "1:693370041310:web:8a4ef905778ff87647a34f"
   };
 
-  const ANTHROPIC_KEY = "%%ANTHROPIC_KEY%%";
+  const GEMINI_KEY = "%%GEMINI_KEY%%";
+  let questionCount = 10;
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
@@ -1419,6 +1443,7 @@
       updatePlayersUI(r.players || {}, r.host);
       if (r.status === 'playing' && !isHost) {
         questions = r.questions || [];
+        questionCount = r.questionCount || 10;
         if (questions.length > 0) startQuizUI();
       }
     });
@@ -1471,7 +1496,7 @@
     showLoading('Generating questions with AI... 🤖');
     try {
       const qs = await generateQuestions(selectedTopic);
-      await update(ref(db, `rooms/${currentRoom}`), { status: 'playing', questions: qs });
+      await update(ref(db, `rooms/${currentRoom}`), { status: 'playing', questions: qs, questionCount });
       questions = qs;
       hideLoading();
       startQuizUI();
@@ -1482,30 +1507,71 @@
   };
 
   async function generateQuestions(topic) {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const allTopics = ['General Knowledge','Bollywood','Science','Gaming','Sports','History','Technology','Geography','Movies','Music'];
+    const actualTopic = topic === 'Random' ? allTopics[Math.floor(Math.random()*allTopics.length)] : topic;
+    const count = questionCount || 10;
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 2000,
-        messages: [{
-          role: 'user',
-          content: `Generate 10 multiple choice quiz questions about "${topic}". Return ONLY valid JSON array, no markdown, no explanation. Format:
+        contents: [{
+          parts: [{
+            text: `Generate ${count} multiple choice quiz questions about "${actualTopic}". Return ONLY valid JSON array, no markdown, no explanation. Format:
 [{"q":"Question text","options":["A. option1","B. option2","C. option3","D. option4"],"answer":"A"}]
 Make questions fun, medium difficulty, and diverse within the topic.`
+          }]
         }]
       })
     });
     const data = await resp.json();
-    if (!data.content || !data.content[0]) {
+    if (!data.candidates || !data.candidates[0]) {
       throw new Error('API Error: ' + JSON.stringify(data));
     }
-    let text = data.content[0].text.trim();
-    text = text.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+    let text = data.candidates[0].content.parts[0].text.trim();
+    text = text.replace(/```json
+?/g,'').replace(/```
+?/g,'').trim();
     const match = text.match(/\[[\s\S]*\]/);
     if (!match) throw new Error('No JSON found: ' + text.substring(0,100));
     return JSON.parse(match[0]);
   }
+
+  // Topic & Count selectors
+  window.selectCustomTopic = (btn) => {
+    document.querySelectorAll('#topicGrid .topic-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    document.getElementById('customTopicRow').style.display = 'block';
+  };
+
+  window.applyCustomTopic = () => {
+    const val = document.getElementById('customTopicInput').value.trim();
+    if (!val) return showToast('Topic likhna bhool gaye!', 'error');
+    selectedTopic = val;
+    if (currentRoom) update(ref(db, `rooms/${currentRoom}`), { topic: val });
+    showToast('Topic set: ' + val + ' ✅');
+  };
+
+  window.selectCount = (btn, count) => {
+    document.querySelectorAll('#countGrid .topic-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    questionCount = count;
+    document.getElementById('customCountRow').style.display = 'none';
+    if (currentRoom) update(ref(db, `rooms/${currentRoom}`), { questionCount: count });
+  };
+
+  window.selectCustomCount = (btn) => {
+    document.querySelectorAll('#countGrid .topic-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    document.getElementById('customCountRow').style.display = 'block';
+  };
+
+  window.applyCustomCount = () => {
+    const val = parseInt(document.getElementById('customCountInput').value);
+    if (!val || val < 1 || val > 50) return showToast('1 se 50 ke beech number dalo!', 'error');
+    questionCount = val;
+    if (currentRoom) update(ref(db, `rooms/${currentRoom}`), { questionCount: val });
+    showToast(val + ' questions set! ✅');
+  };
 
   // ─── QUIZ UI ───
   function startQuizUI() {

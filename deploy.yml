@@ -1,0 +1,34 @@
+name: Deploy to Firebase Hosting
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Inject Secrets into HTML
+        env:
+          GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
+          FIREBASE_DB_URL: ${{ secrets.FIREBASE_DB_URL }}
+        run: |
+          python3 << 'PYEOF'
+          import os
+          with open('index.html', 'r') as f:
+              content = f.read()
+          content = content.replace('%%GEMINI_KEY%%', os.environ['GEMINI_KEY'])
+          content = content.replace('%%FIREBASE_DB_URL%%', os.environ['FIREBASE_DB_URL'])
+          with open('index.html', 'w') as f:
+              f.write(content)
+          print('Secrets injected!')
+          PYEOF
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: quiz-khush
