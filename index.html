@@ -352,7 +352,7 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-const GEMINI_KEY = "AIzaSyDrncyKXian0w1H121snrkOScgCQBf9tpk";
+const GEMINI_KEY = "%%GEMINI%%";
 
 // ─── STATE ───
 let currentUser = null, currentUID = null, currentRoom = null;
@@ -649,9 +649,9 @@ async function generateQuestions(topic){
   const allTopics=['General Knowledge','Bollywood','Science','Gaming','Sports','History','Technology','Geography','Movies','Music'];
   const actualTopic=topic==='Random'?allTopics[Math.floor(Math.random()*allTopics.length)]:topic;
   const count=questionCount||10;
-  const resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+GEMINI_KEY,{
+  const resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',{
     method:'POST',
-    headers:{'Content-Type':'application/json'},
+    headers:{'Content-Type':'application/json','X-goog-api-key':GEMINI_KEY},
     body:JSON.stringify({contents:[{parts:[{text:`Generate ${count} multiple choice quiz questions about "${actualTopic}". Return ONLY a valid JSON array, no markdown, no extra text. Format: [{"q":"Question?","options":["A. opt1","B. opt2","C. opt3","D. opt4"],"answer":"A"}]`}]}]})
   });
   const data=await resp.json();
