@@ -1124,9 +1124,14 @@
   const GEMINI_KEY = "AIzaSyDrncyKXian0w1H121snrkOScgCQBf9tpk";
   let questionCount = 10;
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getDatabase(app);
+  let app, auth, db;
+  try {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getDatabase(app);
+  } catch(e) {
+    document.body.innerHTML = '<div style="color:red;padding:20px;font-family:sans-serif;">Firebase Error: ' + e.message + '</div>';
+  }
 
   // ─── STATE ───
   let currentUser = null;
@@ -1226,6 +1231,9 @@
   };
 
   // ─── AUTH STATE ───
+  // Safety: hide loading after 5s if stuck
+  setTimeout(() => { hideLoading(); }, 5000);
+
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       currentUser = user;
