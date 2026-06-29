@@ -323,7 +323,7 @@ const FC = {
 firebase.initializeApp(FC);
 const auth = firebase.auth();
 const db = firebase.database();
-const AI_KEY = "sk-proj-j2V_y5GoVsKseQzAw5J26X9FPnEYPITU2DOsriZ9D25GDiOOOAZoEU4QkP9fAy0dRuP0iafgyyT3BlbkFJP2NkFWiubVe35ON981BKn8czUoISPriS47OVDdXpIfvI5-3JJDxKC-OHPtpwhKZL3eARoP1IA";
+const AI_KEY = "AIzaSyCCkZDJGB5IjpuVLW34QGr5B_Ov-UYPzgs";
 
 let CU=null,CUID=null,CR=null,isHost=false,topic='General Knowledge',qCount=10;
 let Qs=[],cQ=0,myPts=0,tInt=null,tLeft=15,ans=false;
@@ -580,19 +580,17 @@ async function genQs(topic){
   const all=['General Knowledge','Bollywood','Science','Gaming','Sports','History','Technology','Geography','Movies','Music'];
   const t=topic==='Random'?all[Math.floor(Math.random()*all.length)]:topic;
   const cnt=qCount||10;
-  const r=await fetch('https://api.openai.com/v1/chat/completions',{
+  const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+AI_KEY,{
     method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+AI_KEY},
-    body:JSON.stringify({
-      model:'gpt-4o-mini',
-      messages:[{role:'user',content:'Generate '+cnt+' multiple choice quiz questions about "'+t+'". Return ONLY a valid JSON array, no markdown, no extra text. Format: [{"q":"Question?","options":["A. opt1","B. opt2","C. opt3","D. opt4"],"answer":"A"}]'}],
-      max_tokens:2000
-    })
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({contents:[{parts:[{text:'Generate '+cnt+' multiple choice quiz questions about "'+t+'". Return ONLY a valid JSON array, no markdown, no extra text. Format: [{"q":"Question?","options":["A. opt1","B. opt2","C. opt3","D. opt4"],"answer":"A"}]'}]}]})
   });
   const d=await r.json();
-  if(!d.choices||!d.choices[0])throw new Error(JSON.stringify(d));
-  let txt=d.choices[0].message.content.trim();
-  txt=txt.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+  if(!d.candidates||!d.candidates[0])throw new Error(JSON.stringify(d));
+  let txt=d.candidates[0].content.parts[0].text.trim();
+  txt=txt.replace(/```json
+?/g,'').replace(/```
+?/g,'').trim();
   const m=txt.match(/\[[\s\S]*\]/);
   if(!m)throw new Error('Bad response');
   return JSON.parse(m[0]);
