@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Test</title>
+<style>
+body{background:#0f0f1a;color:white;font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:16px;}
+button{padding:16px 32px;background:#e94560;border:none;border-radius:12px;color:white;font-size:1.1rem;cursor:pointer;}
+#log{background:#1a1a2e;padding:16px;border-radius:12px;width:90%;max-width:400px;font-size:.85rem;white-space:pre-wrap;}
+</style>
+</head>
+<body>
+<h2>🎮 Quiz Khush — Test</h2>
+<button onclick="testClick()">Click Me Test</button>
+<button onclick="testFirebase()">Test Firebase</button>
+<button onclick="testGemini()">Test Gemini</button>
+<div id="log">Logs will appear here...</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+function log(msg){document.getElementById('log').textContent+='\n'+msg;}
+
+function testClick(){log('✅ Click works!');}
+
+firebase.initializeApp({
+  apiKey:"AIzaSyD_ztxkkKZ-3AAjf3vtQHs0rDS8b9wT-Hg",
+  authDomain:"quiz-khush.firebaseapp.com",
+  databaseURL:"https://quiz-khush-default-rtdb.firebaseio.com",
+  projectId:"quiz-khush"
+});
+
+function testFirebase(){
+  try{
+    const db=firebase.database();
+    db.ref('test').set({t:Date.now()}).then(()=>log('✅ Firebase works!')).catch(e=>log('❌ Firebase: '+e.message));
+  }catch(e){log('❌ Firebase init: '+e.message);}
+}
+
+async function testGemini(){
+  try{
+    log('Testing Gemini...');
+    const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyCCkZDJGB5IjpuVLW34QGr5B_Ov-UYPzgs',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{parts:[{text:'Say hi in one word'}]}]})
+    });
+    const d=await r.json();
+    if(d.candidates)log('✅ Gemini works! Response: '+d.candidates[0].content.parts[0].text);
+    else log('❌ Gemini error: '+JSON.stringify(d));
+  }catch(e){log('❌ Gemini fetch: '+e.message);}
+}
+</script>
+</body>
+</html>
